@@ -6,9 +6,59 @@
 
 generator client {
   provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  output   = "../generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+model User {
+  id        String   @id @db.Uuid
+  role      Role
+  createdAt DateTime @default(now())
+
+  @@map("user")
+}
+
+model Client {
+  id                 String             @id @default(uuid())
+  name               String
+  salesperson        String
+  registrationStatus RegistrationStatus
+  billingDate        DateTime           @default(now())
+
+  motorcycles MotorcycleArrival[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("client")
+}
+
+model MotorcycleArrival {
+  id          String   @id @default(uuid())
+  chassis     String   @unique
+  model       String
+  arrivalDate DateTime
+
+  clientId String?
+  client   Client? @relation(fields: [clientId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("motorcycle_arrival")
+}
+
+enum RegistrationStatus {
+  PENDING
+  IN_REGISTRATION
+  REGISTERED
+  DELIVERED
+}
+
+enum Role {
+  LOGISTICS
+  BDC
 }
