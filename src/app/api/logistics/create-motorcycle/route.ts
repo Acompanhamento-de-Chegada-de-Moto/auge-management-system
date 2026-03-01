@@ -28,8 +28,6 @@ export async function POST(request: NextRequest) {
         chassis,
         model,
         arrivalDate: parsedDate,
-        // status defaults to PENDING
-        // createdAt defaults to now()
       },
     });
 
