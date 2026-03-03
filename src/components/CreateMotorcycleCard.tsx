@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { supabase } from "@/lib/supabase/cliente";
 import { Button } from "./ui/button";
 import {
   Dialog,
@@ -33,20 +34,35 @@ const CreateMotorcycleCard = ({
     }
 
     try {
-      await fetch("/api/logistics/create-motorcycle", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: formMotorcycle.model,
-          chassis: formMotorcycle.chassis,
-          arrivalDate: formMotorcycle.arrivalDate,
-        }),
+      const { data, error } = await supabase
+        .from("motorcycle_arrival")
+        .insert([
+          {
+            chassis: formMotorcycle.chassis,
+            model: formMotorcycle.model,
+            arrivalDate: formMotorcycle.arrivalDate,
+          },
+        ])
+        .select();
+
+      if (error) {
+        console.error("Erro do Supabase:", error.message);
+        alert(error.message);
+        return;
+      }
+
+      console.log("Moto criada:", data);
+
+      // limpa o form
+      setFormMotorcycle({
+        chassis: "",
+        model: "",
+        arrivalDate: "",
       });
+
       handleOpenDialog();
     } catch (error) {
-      console.error("Erro ao cadastrar moto:", error);
+      console.error("Erro inesperado:", error);
     }
   };
 

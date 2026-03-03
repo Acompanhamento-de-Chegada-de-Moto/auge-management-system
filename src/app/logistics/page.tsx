@@ -1,13 +1,14 @@
 "use client";
 
+import ExcelJS from "exceljs";
 import { FileSpreadsheet, Loader2, LogOut, Plus, Upload } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import CreateMotorcycleCard from "@/components/CreateMotorcycleCard";
 import ListMotorcycleCard from "@/components/ListMotorcycleCard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { createComponentClient } from "@/lib/supabase/cliente";
+import { supabase } from "@/lib/supabase/cliente";
 
 interface MeResponse {
   id: string;
@@ -31,73 +32,124 @@ const Logistics = () => {
   const [importing, setImporting] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const supabase = createComponentClient();
   const router = useRouter();
 
-  // Função para buscar motos (extraída para ser reutilizada após o upload)
-  const fetchMotorcycles = useCallback(async () => {
-    try {
-      const res = await fetch("/api/logistics");
-      if (res.ok) {
-        const motorcycles: FetchMotorcyclesTypeResponse[] = await res.json();
-        setMotorcycleFetched(motorcycles);
-      }
-    } catch (error) {
-      console.error("Erro ao buscar dados:", error);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   useEffect(() => {
-    async function checkUser() {
+    const fetchData = async () => {
       try {
-        const res = await fetch("/api/me");
-        if (!res.ok) {
-          router.push("/logistics/sign-up");
+        setLoading(true);
+        const { data, error } = await supabase
+          .from("motorcycle_arrival")
+          .select("*")
+          .order("createdAt", { ascending: false })
+          .returns<FetchMotorcyclesTypeResponse[]>();
+
+        if (error) {
+          console.error("Erro ao buscar motos:", error.message);
           return;
         }
-        const data: MeResponse = await res.json();
-        if (data.role !== "LOGISTICS") {
-          router.push("/unauthorized");
-          return;
-        }
-        fetchMotorcycles(); // Busca os dados se o usuário estiver ok
-      } catch {
-        router.push("/logistics/sign-up");
+
+        setMotorcycleFetched(data ?? []);
+      } catch (error) {
+        console.error("Erro ao buscar dados:", error);
+      } finally {
+        setLoading(false);
       }
-    }
-    checkUser();
-  }, [router, fetchMotorcycles]);
+    };
+    fetchData();
+  }, []);
 
   const handleImportExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     setImporting(true);
-    const formData = new FormData();
-    formData.append("file", file);
 
     try {
-      const response = await fetch("/api/logistics/upload", {
-        method: "POST",
-        body: formData,
+      const workbook = new ExcelJS.Workbook();
+      const buffer = await file.arrayBuffer();
+      await workbook.xlsx.load(buffer);
+
+      const worksheet = workbook.worksheets[0];
+      if (!worksheet) {
+        alert("Planilha inválida.");
+        return;
+      }
+
+      // 🔎 pega cabeçalhos (primeira linha)
+      const headerRow = worksheet.getRow(1);
+      const headers = headerRow.values as string[];
+
+      const requiredColumns = ["chassi", "modelo", "dataChegada"];
+
+      const normalizedHeaders = headers
+        .filter(Boolean)
+        .map((h) => String(h).trim());
+
+      const isValid = requiredColumns.every((col) =>
+        normalizedHeaders.includes(col),
+      );
+
+      if (!isValid) {
+        alert(
+          "A planilha deve conter exatamente as colunas: chassis, model e arrivalDate.",
+        );
+        return;
+      }
+
+      const chassisIndex = normalizedHeaders.indexOf("chassi") + 1;
+      const modelIndex = normalizedHeaders.indexOf("modelo") + 1;
+      const arrivalIndex = normalizedHeaders.indexOf("dataChegada") + 1;
+
+      const motorcycles: any[] = [];
+
+      worksheet.eachRow((row, rowNumber) => {
+        if (rowNumber === 1) return; // pula header
+
+        const chassis = row.getCell(chassisIndex).value;
+        const model = row.getCell(modelIndex).value;
+        const arrivalDate = row.getCell(arrivalIndex).value;
+
+        if (!chassis || !arrivalDate) return;
+
+        // trata data (excel pode retornar Date ou string)
+        let formattedDate: string;
+
+        if (arrivalDate instanceof Date) {
+          formattedDate = arrivalDate.toISOString().split("T")[0];
+        } else {
+          formattedDate = String(arrivalDate);
+        }
+
+        motorcycles.push({
+          chassis: String(chassis),
+          model: model ? String(model) : null,
+          arrivalDate: formattedDate,
+        });
       });
 
-      const data = await response.json();
-
-      if (response.ok) {
-        alert(`Sucesso! ${data.inserted} motos importadas.`);
-        fetchMotorcycles(); // <--- Atualiza a lista automaticamente
-      } else {
-        alert(data.error || "Erro ao processar planilha");
+      if (!motorcycles.length) {
+        alert("Nenhum registro válido encontrado.");
+        return;
       }
+
+      const { error } = await supabase
+        .from("motorcycle_arrival")
+        .insert(motorcycles);
+
+      if (error) {
+        console.error(error);
+        alert("Erro ao importar planilha.");
+        return;
+      }
+
+      alert(`${motorcycles.length} motos importadas com sucesso!`);
     } catch (error) {
-      console.error("Erro no upload:", error);
-      alert("Falha na conexão com o servidor.");
+      console.error("Erro ao importar:", error);
+      alert("Erro ao processar planilha.");
     } finally {
       setImporting(false);
-      if (fileInputRef.current) fileInputRef.current.value = ""; // Limpa o input
+      e.target.value = ""; // limpa input
     }
   };
 
@@ -148,7 +200,7 @@ const Logistics = () => {
             size="sm"
             onClick={async () => {
               await supabase.auth.signOut();
-              router.push("/logistics/sign-up");
+              router.push("/logistics/sign-in");
             }}
           >
             <LogOut className="size-4 mr-2" />
@@ -165,8 +217,8 @@ const Logistics = () => {
               Configuração da Planilha
             </p>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Use as colunas exatas: <strong>chassis</strong>,{" "}
-              <strong>model</strong> e <strong>arrivalDate</strong>.
+              Use as colunas exatas: <strong>chassi</strong>,{" "}
+              <strong>modelo</strong> e <strong>dataChegada</strong>.
             </p>
           </div>
         </CardContent>
@@ -176,7 +228,6 @@ const Logistics = () => {
         <CreateMotorcycleCard
           isOpen={dialogIsOpen}
           handleOpenDialog={handleOpenDialog}
-          // Dica: Se quiser atualizar a lista ao criar manual, passe o fetchMotorcycles como prop
         />
       )}
 

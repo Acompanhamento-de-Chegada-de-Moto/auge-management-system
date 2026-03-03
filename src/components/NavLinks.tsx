@@ -23,7 +23,7 @@ export function NavLinks() {
     },
     {
       label: "Logística",
-      href: "/logistics/sign-up",
+      href: "/logistics/sign-in",
       activePath: "/logistics", // Aqui garantimos que qualquer sub-rota de /logistics ative o link
       icon: Truck,
     },

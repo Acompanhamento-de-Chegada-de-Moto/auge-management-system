@@ -5,7 +5,7 @@ import { Lock } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { type SignUpInputType, signUpSchema } from "@/@types/SingUpType";
-import { createComponentClient } from "@/lib/supabase/cliente";
+import { supabase } from "@/lib/supabase/cliente";
 import { Button } from "./ui/button";
 import {
   Card,
@@ -17,8 +17,6 @@ import {
 import { Input } from "./ui/input";
 
 const SignInForm = () => {
-  const supabase = createComponentClient();
-
   const router = useRouter();
   const {
     register,
