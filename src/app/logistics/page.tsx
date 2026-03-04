@@ -10,54 +10,58 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/lib/supabase/cliente";
 
-interface MeResponse {
-  id: string;
-  role: "LOGISTICS" | "BDC";
-}
-
 export interface FetchMotorcyclesTypeResponse {
   id: string;
   chassis: string;
   model: string;
-  arrivalDate: Date;
-  createdAt: Date;
+  arrivalDate: string; // Supabase retorna string
+  createdAt: string; // Supabase retorna string
 }
 
 const Logistics = () => {
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(10);
+  const [total, setTotal] = useState(0);
   const [dialogIsOpen, setDialogIsOpen] = useState(false);
   const [motorcyclesFetched, setMotorcycleFetched] = useState<
     FetchMotorcyclesTypeResponse[]
   >([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [isFirstLoad, setIsFirstLoad] = useState(true);
   const [importing, setImporting] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
+  const fetchMotorcycles = async (currentPage: number) => {
+    if (isFirstLoad) setLoading(true);
+
+    const from = (currentPage - 1) * pageSize;
+    const to = from + pageSize - 1;
+
+    const { data, error, count } = await supabase
+      .from("motorcycle_arrival")
+      .select("*", { count: "exact" })
+      .order("createdAt", { ascending: false })
+      .range(from, to)
+      .returns<FetchMotorcyclesTypeResponse[]>();
+
+    if (error) {
+      console.error(error);
+    } else {
+      setMotorcycleFetched(data ?? []);
+      setTotal(count ?? 0);
+    }
+
+    if (isFirstLoad) {
+      setLoading(false);
+      setIsFirstLoad(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const { data, error } = await supabase
-          .from("motorcycle_arrival")
-          .select("*")
-          .order("createdAt", { ascending: false })
-          .returns<FetchMotorcyclesTypeResponse[]>();
-
-        if (error) {
-          console.error("Erro ao buscar motos:", error.message);
-          return;
-        }
-
-        setMotorcycleFetched(data ?? []);
-      } catch (error) {
-        console.error("Erro ao buscar dados:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, []);
+    fetchMotorcycles(page);
+  }, [page]);
 
   const handleImportExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -66,90 +70,107 @@ const Logistics = () => {
     setImporting(true);
 
     try {
-      const workbook = new ExcelJS.Workbook();
       const buffer = await file.arrayBuffer();
+      const workbook = new ExcelJS.Workbook();
       await workbook.xlsx.load(buffer);
 
       const worksheet = workbook.worksheets[0];
-      if (!worksheet) {
-        alert("Planilha inválida.");
-        return;
-      }
+      if (!worksheet) return alert("Planilha inválida.");
 
-      // 🔎 pega cabeçalhos (primeira linha)
+      const normalize = (value: any) =>
+        String(value || "")
+          .trim()
+          .toLowerCase();
+
       const headerRow = worksheet.getRow(1);
-      const headers = headerRow.values as string[];
+      const headers = headerRow.values as any[];
 
-      const requiredColumns = ["chassi", "modelo", "dataChegada"];
+      let chassiIndex = -1;
+      let modeloIndex = -1;
+      let dataIndex = -1;
 
-      const normalizedHeaders = headers
-        .filter(Boolean)
-        .map((h) => String(h).trim());
+      headers.forEach((header, index) => {
+        const normalized = normalize(header);
+        if (normalized === "chassi") chassiIndex = index;
+        if (normalized === "modelo") modeloIndex = index;
+        if (normalized === "datachegada") dataIndex = index;
+      });
 
-      const isValid = requiredColumns.every((col) =>
-        normalizedHeaders.includes(col),
-      );
-
-      if (!isValid) {
-        alert(
-          "A planilha deve conter exatamente as colunas: chassis, model e arrivalDate.",
-        );
-        return;
+      if (chassiIndex === -1 || modeloIndex === -1 || dataIndex === -1) {
+        return alert("A planilha deve conter: chassi, modelo e dataChegada.");
       }
 
-      const chassisIndex = normalizedHeaders.indexOf("chassi") + 1;
-      const modelIndex = normalizedHeaders.indexOf("modelo") + 1;
-      const arrivalIndex = normalizedHeaders.indexOf("dataChegada") + 1;
+      const parseArrivalDate = (value: any): string | null => {
+        if (!value) return null;
 
-      const motorcycles: any[] = [];
-
-      worksheet.eachRow((row, rowNumber) => {
-        if (rowNumber === 1) return; // pula header
-
-        const chassis = row.getCell(chassisIndex).value;
-        const model = row.getCell(modelIndex).value;
-        const arrivalDate = row.getCell(arrivalIndex).value;
-
-        if (!chassis || !arrivalDate) return;
-
-        // trata data (excel pode retornar Date ou string)
-        let formattedDate: string;
-
-        if (arrivalDate instanceof Date) {
-          formattedDate = arrivalDate.toISOString().split("T")[0];
-        } else {
-          formattedDate = String(arrivalDate);
+        if (value instanceof Date) {
+          return value.toISOString().split("T")[0];
         }
 
-        motorcycles.push({
-          chassis: String(chassis),
-          model: model ? String(model) : null,
-          arrivalDate: formattedDate,
+        if (typeof value === "number") {
+          const excelEpoch = new Date(1899, 11, 30);
+          const parsed = new Date(excelEpoch.getTime() + value * 86400000);
+          return parsed.toISOString().split("T")[0];
+        }
+
+        const raw = String(value).trim();
+
+        if (raw.includes("/")) {
+          const [day, month, year] = raw.split("/");
+          return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+        }
+
+        if (raw.includes("-")) return raw;
+
+        return null;
+      };
+
+      const rowsToInsert: {
+        chassis: string;
+        model: string | null;
+        arrivalDate: string;
+      }[] = [];
+
+      worksheet.eachRow((row, rowNumber) => {
+        if (rowNumber === 1) return;
+
+        const chassi = row.getCell(chassiIndex).value;
+        const modelo = row.getCell(modeloIndex).value;
+        const dataChegada = row.getCell(dataIndex).value;
+
+        if (!chassi || !dataChegada) return;
+
+        const parsedDate = parseArrivalDate(dataChegada);
+        if (!parsedDate) return;
+
+        rowsToInsert.push({
+          chassis: String(chassi).trim(),
+          model: modelo ? String(modelo).trim() : null,
+          arrivalDate: parsedDate,
         });
       });
 
-      if (!motorcycles.length) {
-        alert("Nenhum registro válido encontrado.");
-        return;
-      }
+      if (!rowsToInsert.length)
+        return alert("Nenhuma linha válida encontrada.");
 
       const { error } = await supabase
         .from("motorcycle_arrival")
-        .insert(motorcycles);
+        .insert(rowsToInsert);
 
       if (error) {
         console.error(error);
-        alert("Erro ao importar planilha.");
-        return;
+        return alert("Erro ao inserir dados.");
       }
 
-      alert(`${motorcycles.length} motos importadas com sucesso!`);
+      await fetchMotorcycles(page);
+
+      alert(`${rowsToInsert.length} motos importadas com sucesso!`);
     } catch (error) {
-      console.error("Erro ao importar:", error);
+      console.error(error);
       alert("Erro ao processar planilha.");
     } finally {
       setImporting(false);
-      e.target.value = ""; // limpa input
+      e.target.value = "";
     }
   };
 
@@ -159,9 +180,7 @@ const Logistics = () => {
     <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 flex flex-col gap-5">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h2 className="text-xl font-semibold text-foreground">
-            Painel Logística
-          </h2>
+          <h2 className="text-xl font-semibold">Painel Logística</h2>
           <p className="text-sm text-muted-foreground">
             Registre a chegada de motos e importe planilhas Excel
           </p>
@@ -209,16 +228,18 @@ const Logistics = () => {
         </div>
       </div>
 
-      <Card className="border-dashed bg-muted/30">
+      <Card className="border-dashed">
         <CardContent className="flex items-start gap-3 py-3">
           <FileSpreadsheet className="size-5 text-muted-foreground shrink-0 mt-0.5" />
           <div>
             <p className="text-sm font-medium text-foreground">
-              Configuração da Planilha
+              Formato da planilha para importacao
             </p>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Use as colunas exatas: <strong>chassi</strong>,{" "}
-              <strong>modelo</strong> e <strong>dataChegada</strong>.
+              A planilha deve conter as colunas: <strong>chassi</strong>,{" "}
+              <strong>modelo</strong> e <strong>dataChegada</strong> (ou
+              &ldquo;Data Chegada&rdquo;). Formatos de data aceitos: dd/mm/aaaa
+              ou aaaa-mm-dd.
             </p>
           </div>
         </CardContent>
@@ -231,13 +252,39 @@ const Logistics = () => {
         />
       )}
 
-      {loading ? (
+      {isFirstLoad && loading ? (
         <div className="flex justify-center py-10">
           <Loader2 className="animate-spin text-muted-foreground" />
         </div>
       ) : (
-        <ListMotorcycleCard motorcycles={motorcyclesFetched} />
+        <div
+          className={`transition-opacity duration-200 ${
+            loading ? "opacity-60" : "opacity-100"
+          }`}
+        >
+          <ListMotorcycleCard motorcycles={motorcyclesFetched} />
+        </div>
       )}
+
+      <div className="flex gap-2 mt-4">
+        <Button
+          disabled={page === 1}
+          onClick={() => setPage((prev) => prev - 1)}
+        >
+          Anterior
+        </Button>
+
+        <span>
+          Página {page} de {Math.ceil(total / pageSize) || 1}
+        </span>
+
+        <Button
+          disabled={page >= Math.ceil(total / pageSize)}
+          onClick={() => setPage((prev) => prev + 1)}
+        >
+          Próxima
+        </Button>
+      </div>
     </div>
   );
 };
