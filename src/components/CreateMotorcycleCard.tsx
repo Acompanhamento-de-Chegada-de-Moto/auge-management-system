@@ -35,7 +35,7 @@ const CreateMotorcycleCard = ({
 
     try {
       const { data, error } = await supabase
-        .from("motorcycle_arrival")
+        .from("motorcycles")
         .insert([
           {
             chassis: formMotorcycle.chassis,

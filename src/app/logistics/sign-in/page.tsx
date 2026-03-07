@@ -3,7 +3,7 @@ import SignInForm from "@/components/SignInForm";
 const SignInLogistics = () => {
   return (
     <div>
-      <SignInForm />
+      <SignInForm title="Logística" />
     </div>
   );
 };

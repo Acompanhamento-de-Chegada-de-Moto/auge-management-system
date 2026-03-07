@@ -16,7 +16,11 @@ import {
 } from "./ui/card";
 import { Input } from "./ui/input";
 
-const SignInForm = () => {
+interface SignInFormProps {
+  title: "Logística" | "BDC";
+}
+
+const SignInForm = ({ title }: SignInFormProps) => {
   const router = useRouter();
   const {
     register,
@@ -51,9 +55,9 @@ const SignInForm = () => {
           <div className="mx-auto mb-3 flex size-12 items-center justify-center rounded-full bg-primary/10">
             <Lock className="size-5 text-primary" />
           </div>
-          <CardTitle>Acesso Logistica</CardTitle>
+          <CardTitle>Acesso {title}</CardTitle>
           <CardDescription>
-            Digite a senha para acessar o painel de logistica
+            Digite a senha para acessar o painel de {title.toLowerCase()}
           </CardDescription>
         </CardHeader>
         <CardContent>

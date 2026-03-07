@@ -1,4 +1,4 @@
-import type { FetchMotorcyclesTypeResponse } from "@/app/logistics/page";
+import type { Motorcycle } from "@/app/logistics/page";
 import { Card, CardContent } from "./ui/card";
 import {
   Table,
@@ -10,7 +10,7 @@ import {
 } from "./ui/table";
 
 interface ListMotorcycleProps {
-  motorcycles: FetchMotorcyclesTypeResponse[];
+  motorcycles: Motorcycle[];
 }
 
 const ListMotorcycleCard = ({ motorcycles }: ListMotorcycleProps) => {
@@ -34,10 +34,12 @@ const ListMotorcycleCard = ({ motorcycles }: ListMotorcycleProps) => {
                 </TableCell>
                 <TableCell>{e.model}</TableCell>
                 <TableCell>
-                  {new Date(e.arrivalDate).toLocaleDateString("pt-BR")}
+                  {new Date(e.arrival_date as string).toLocaleDateString(
+                    "pt-BR",
+                  )}
                 </TableCell>
                 <TableCell className="text-muted-foreground text-xs">
-                  {new Date(e.createdAt).toLocaleDateString("pt-BR")}
+                  {new Date(e.created_at as string).toLocaleDateString("pt-BR")}
                 </TableCell>
               </TableRow>
             ))}

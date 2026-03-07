@@ -10,12 +10,17 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/lib/supabase/cliente";
 
-export interface FetchMotorcyclesTypeResponse {
+export interface Motorcycle {
   id: string;
   chassis: string;
-  model: string;
-  arrivalDate: string; // Supabase retorna string
-  createdAt: string; // Supabase retorna string
+  model: string | null;
+  arrival_date: string | null;
+  arrival_status: "WAITING" | "ARRIVED" | "DELIVERED" | null;
+  billing_date: string | null;
+  seller_name: string | null;
+  client_id: string | null;
+  registration_status: "PENDING" | "REGISTERED" | "CANCELED" | null;
+  created_at: string | null;
 }
 
 const Logistics = () => {
@@ -23,9 +28,7 @@ const Logistics = () => {
   const [pageSize] = useState(10);
   const [total, setTotal] = useState(0);
   const [dialogIsOpen, setDialogIsOpen] = useState(false);
-  const [motorcyclesFetched, setMotorcycleFetched] = useState<
-    FetchMotorcyclesTypeResponse[]
-  >([]);
+  const [motorcyclesFetched, setMotorcycleFetched] = useState<Motorcycle[]>([]);
   const [loading, setLoading] = useState(false);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
   const [importing, setImporting] = useState(false);
@@ -40,16 +43,15 @@ const Logistics = () => {
     const to = from + pageSize - 1;
 
     const { data, error, count } = await supabase
-      .from("motorcycle_arrival")
+      .from("motorcycles")
       .select("*", { count: "exact" })
-      .order("createdAt", { ascending: false })
-      .range(from, to)
-      .returns<FetchMotorcyclesTypeResponse[]>();
+      .order("created_at", { ascending: false })
+      .range(from, to);
 
     if (error) {
       console.error(error);
     } else {
-      setMotorcycleFetched(data ?? []);
+      setMotorcycleFetched((data as Motorcycle[]) ?? []);
       setTotal(count ?? 0);
     }
 
@@ -128,7 +130,7 @@ const Logistics = () => {
       const rowsToInsert: {
         chassis: string;
         model: string | null;
-        arrivalDate: string;
+        arrival_date: string;
       }[] = [];
 
       worksheet.eachRow((row, rowNumber) => {
@@ -146,7 +148,7 @@ const Logistics = () => {
         rowsToInsert.push({
           chassis: String(chassi).trim(),
           model: modelo ? String(modelo).trim() : null,
-          arrivalDate: parsedDate,
+          arrival_date: parsedDate,
         });
       });
 
@@ -154,8 +156,8 @@ const Logistics = () => {
         return alert("Nenhuma linha válida encontrada.");
 
       const { error } = await supabase
-        .from("motorcycle_arrival")
-        .insert(rowsToInsert);
+        .from("motorcycles")
+        .insert(rowsToInsert, { ignoreDuplicates: true });
 
       if (error) {
         console.error(error);
@@ -233,13 +235,12 @@ const Logistics = () => {
           <FileSpreadsheet className="size-5 text-muted-foreground shrink-0 mt-0.5" />
           <div>
             <p className="text-sm font-medium text-foreground">
-              Formato da planilha para importacao
+              Formato da planilha para importação
             </p>
             <p className="text-xs text-muted-foreground leading-relaxed">
               A planilha deve conter as colunas: <strong>chassi</strong>,{" "}
-              <strong>modelo</strong> e <strong>dataChegada</strong> (ou
-              &ldquo;Data Chegada&rdquo;). Formatos de data aceitos: dd/mm/aaaa
-              ou aaaa-mm-dd.
+              <strong>modelo</strong> e <strong>dataChegada</strong>. Formatos
+              de data aceitos: dd/mm/aaaa ou aaaa-mm-dd.
             </p>
           </div>
         </CardContent>

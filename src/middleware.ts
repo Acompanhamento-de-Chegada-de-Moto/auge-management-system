@@ -15,54 +15,53 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
   const pathname = request.nextUrl.pathname;
 
-  // 🔓 1. ROTAS PÚBLICAS
-  const isPublicRoute =
-    pathname === "/" ||
-    pathname.includes("/sign-in") ||
-    pathname.startsWith("/_next") ||
-    pathname.includes("/api/auth");
-
-  if (isPublicRoute) {
+  // 1. Recursos do sistema (Sempre liberados)
+  if (pathname.startsWith("/_next") || pathname.includes("/api/auth")) {
     return response;
   }
 
-  // ❌ 2. PROTEÇÃO: NÃO LOGADO
-  if (!user) {
+  // 🚪 2. LÓGICA PARA USUÁRIOS LOGADOS
+  if (user) {
+    const { data: userData } = await supabase
+      .from("users")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+    console.log(userData);
+    const role = userData?.role;
+
+    // BLOQUEIO DE PÁGINAS DE LOGIN (Home "/" agora é ignorada aqui para ser livre)
+    if (pathname.includes("/sign-in")) {
+      if (role === "logistics")
+        return NextResponse.redirect(new URL("/logistics", request.url));
+      if (role === "bdc")
+        return NextResponse.redirect(new URL("/bdc", request.url));
+    }
+
+    // REDIRECIONAMENTO CRUZADO (Um não entra na área do outro)
+    if (pathname.startsWith("/bdc") && role === "logistics") {
+      return NextResponse.redirect(new URL("/logistics", request.url));
+    }
+
+    if (pathname.startsWith("/logistics") && role === "BDC") {
+      return NextResponse.redirect(new URL("/bdc", request.url));
+    }
+
+    // Se estiver logado e na Home ou em sua rota correta, apenas segue
+    return response;
+  }
+
+  // ❌ 3. PROTEÇÃO PARA DESLOGADOS
+  // Home "/" e páginas de "sign-in" são as únicas permitidas
+  const isPublicPage = pathname === "/" || pathname.includes("/sign-in");
+
+  if (!isPublicPage) {
     if (pathname.startsWith("/logistics")) {
       return NextResponse.redirect(new URL("/logistics/sign-in", request.url));
     }
     if (pathname.startsWith("/bdc")) {
       return NextResponse.redirect(new URL("/bdc/sign-in", request.url));
     }
-    return NextResponse.redirect(new URL("/", request.url));
-  }
-
-  // 🔐 3. BUSCA DE ROLE
-  const { data: userData } = await supabase
-    .from("user")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  const role = userData?.role;
-
-  // 🔄 4. REDIRECIONAMENTO CRUZADO (A mágica está aqui)
-
-  // Se o cara é LOGISTICS e tenta entrar no BDC -> Manda pra LOGISTICS
-  if (pathname.startsWith("/bdc") && role === "LOGISTICS") {
-    return NextResponse.redirect(new URL("/logistics", request.url));
-  }
-
-  // Se o cara é BDC e tenta entrar no LOGISTICS -> Manda pra BDC
-  if (pathname.startsWith("/logistics") && role === "BDC") {
-    return NextResponse.redirect(new URL("/bdc", request.url));
-  }
-
-  // 🛡️ 5. PROTEÇÃO GERAL (Caso o role seja nulo ou diferente dos dois acima)
-  if (pathname.startsWith("/logistics") && role !== "LOGISTICS") {
-    return NextResponse.redirect(new URL("/", request.url));
-  }
-  if (pathname.startsWith("/bdc") && role !== "BDC") {
     return NextResponse.redirect(new URL("/", request.url));
   }
 
