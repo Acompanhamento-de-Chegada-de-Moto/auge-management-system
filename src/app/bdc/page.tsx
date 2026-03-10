@@ -2,8 +2,10 @@
 
 import { Loader2, LogOut, Pencil, Plus, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import CreateClientForm from "@/components/clients/CreateClientForm";
+import DeleteClientAlert from "@/components/clients/DeleteClientAlert";
+import EditClientForm from "@/components/clients/EditClientForm";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -22,9 +24,11 @@ interface Client {
   city: string;
   created_at: string;
   motorcycles?: {
+    id: string;
     model: string;
     chassis: string;
     seller_name: string;
+    arrival_date: string | null;
   }[];
 }
 
@@ -32,36 +36,50 @@ const BdcPage = () => {
   const [clients, setClients] = useState<Client[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoadingClients, setIsLoadingClients] = useState(true);
+  const [clientToEdit, setClientToEdit] = useState<Client | null>(null);
+  const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
   const router = useRouter();
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setIsLoadingClients(true);
-        const { data, error } = await supabase
-          .from("clients")
-          .select(
-            `
-          *,
-          motorcycles (*) 
-        `,
-          )
-          .order("created_at", { ascending: false });
+  const fetchData = useCallback(async () => {
+    try {
+      setIsLoadingClients(true);
+      const { data, error } = await supabase
+        .from("clients")
+        .select(
+          `
+        *,
+        motorcycles (*) 
+      `,
+        )
+        .order("created_at", { ascending: false });
 
-        if (error) throw error;
+      if (error) throw error;
 
-        setClients(data || []);
-      } catch (error) {
-        console.error("Erro ao buscar dados:", error);
-      } finally {
-        setIsLoadingClients(false);
-      }
-    };
-
-    fetchData();
+      setClients(data || []);
+    } catch (error) {
+      console.error("Erro ao buscar dados:", error);
+    } finally {
+      setIsLoadingClients(false);
+    }
   }, []);
 
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
   const handleShowModal = () => setIsModalOpen((prev) => !prev);
+
+  const handleEdit = (client: Client) => {
+    setClientToEdit(client);
+    setIsEditModalOpen(true);
+  };
+
+  const handleDelete = (client: Client) => {
+    setClientToDelete(client);
+    setIsDeleteAlertOpen(true);
+  };
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 flex flex-col gap-5">
@@ -97,7 +115,24 @@ const BdcPage = () => {
           isOpen={isModalOpen}
           onOpenChange={(open) => {
             setIsModalOpen(open);
+            // We should refresh after create, but let's not break existing functionality, just refresh
+            if (!open) fetchData();
           }}
+        />
+
+        <EditClientForm
+          key={clientToEdit?.id || "none"}
+          isOpen={isEditModalOpen}
+          onOpenChange={(open) => setIsEditModalOpen(open)}
+          client={clientToEdit}
+          onSuccess={fetchData}
+        />
+
+        <DeleteClientAlert
+          isOpen={isDeleteAlertOpen}
+          onOpenChange={(open) => setIsDeleteAlertOpen(open)}
+          client={clientToDelete}
+          onSuccess={fetchData}
         />
 
         <div className="mt-6">
@@ -142,6 +177,7 @@ const BdcPage = () => {
                                   variant="ghost"
                                   size="icon"
                                   className="size-8"
+                                  onClick={() => handleEdit(client)}
                                 >
                                   <Pencil className="size-3.5" />
                                 </Button>
@@ -149,6 +185,7 @@ const BdcPage = () => {
                                   variant="ghost"
                                   size="icon"
                                   className="size-8 text-destructive"
+                                  onClick={() => handleDelete(client)}
                                 >
                                   <Trash2 className="size-3.5" />
                                 </Button>

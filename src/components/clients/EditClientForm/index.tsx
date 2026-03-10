@@ -1,0 +1,122 @@
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase/cliente";
+import { notify } from "@/lib/toast";
+import EditClientFormUI, { type Form } from "./EditClientFormUI";
+
+interface Client {
+  id: string;
+  name: string;
+  city: string;
+  created_at: string;
+  motorcycles?: {
+    id: string;
+    model: string;
+    chassis: string;
+    seller_name: string;
+    arrival_date: string | null;
+  }[];
+}
+
+interface EditClientFormProps {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  client: Client | null;
+  onSuccess: () => void;
+}
+
+const initialForm: Form = {
+  arrival_date: "",
+  seller_name: "",
+  name: "",
+  city: "",
+};
+
+const EditClientForm = ({
+  isOpen,
+  onOpenChange,
+  client,
+  onSuccess,
+}: EditClientFormProps) => {
+  const [form, setForm] = useState<Form>(initialForm);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (client && isOpen) {
+      const moto = client.motorcycles?.[0];
+      setForm({
+        name: client.name || "",
+        city: client.city || "",
+        seller_name: moto?.seller_name || "",
+        arrival_date: moto?.arrival_date ? moto.arrival_date.split("T")[0] : "",
+      });
+    } else {
+      setForm(initialForm);
+    }
+  }, [client, isOpen]);
+
+  const updateField = (field: keyof Form, value: string) => {
+    setForm((prev: Form) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSubmit = async () => {
+    if (!form.name || !form.city || !client) {
+      notify.warning("Preencha todos os campos obrigatórios.");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+
+      // Update client
+      const { error: clientError } = await supabase
+        .from("clients")
+        .update({ name: form.name, city: form.city })
+        .eq("id", client.id);
+
+      if (clientError) throw clientError;
+
+      // Update motorcycle if it exists
+      const moto = client.motorcycles?.[0];
+      if (moto) {
+        const { error: motoError } = await supabase
+          .from("motorcycles")
+          .update({
+            seller_name: form.seller_name,
+            arrival_date: form.arrival_date || null,
+          })
+          .eq("id", moto.id);
+
+        if (motoError) throw motoError;
+      }
+
+      notify.success("Cliente atualizado com sucesso!");
+      onSuccess();
+      handleClose();
+    } catch (error) {
+      notify.error(
+        `Erro ao salvar: ${error instanceof Error ? error.message : "Desconhecido"}`,
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleClose = () => {
+    setForm(initialForm);
+    onOpenChange(false);
+  };
+
+  return (
+    <EditClientFormUI
+      isOpen={isOpen}
+      handleClose={handleClose}
+      client={client}
+      form={form}
+      updateField={updateField}
+      handleSubmit={handleSubmit}
+      isSubmitting={isSubmitting}
+    />
+  );
+};
+
+export default EditClientForm;

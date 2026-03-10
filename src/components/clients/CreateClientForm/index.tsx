@@ -65,7 +65,13 @@ const CreateClientForm = ({ isOpen, onOpenChange }: CreateClientFormProps) => {
 
       setFetchedMotorcycle(motorcycle);
       setNotFoundMotorcycle(false);
-      setForm(initialForm);
+      setForm({
+        ...initialForm,
+        arrival_date: motorcycle.arrival_date
+          ? motorcycle.arrival_date.split("T")[0]
+          : "",
+        seller_name: motorcycle.seller_name || "",
+      });
       notify.success("Moto encontrada com sucesso!");
     } catch {
       notify.error("Erro ao buscar a moto. Tente novamente.");
