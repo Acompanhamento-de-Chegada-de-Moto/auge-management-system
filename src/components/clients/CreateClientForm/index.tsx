@@ -105,7 +105,9 @@ const CreateClientForm = ({ isOpen, onOpenChange }: CreateClientFormProps) => {
       notify.success("Cliente cadastrado e vinculado com sucesso!");
       handleClose();
     } catch (error) {
-      notify.error(`Erro ao salvar: ${error instanceof Error ? error.message : "Desconhecido"}`);
+      notify.error(
+        `Erro ao salvar: ${error instanceof Error ? error.message : "Desconhecido"}`,
+      );
     } finally {
       setIsSubmitting(false);
     }

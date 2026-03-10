@@ -61,9 +61,9 @@ const Logistics = () => {
     }
   };
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: intentional
   useEffect(() => {
     fetchMotorcycles(page);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page]);
 
   const handleImportExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
