@@ -24,3 +24,6 @@ jobs:
 
       - name: Run Biome CI
         run: npm run lint
+
+      - name: Run Vitest Tests
+        run: npm run test:ci
