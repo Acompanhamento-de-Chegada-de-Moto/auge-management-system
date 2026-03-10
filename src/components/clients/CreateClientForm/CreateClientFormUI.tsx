@@ -1,12 +1,12 @@
 import { Loader2, Search, XCircle } from "lucide-react";
-import { Button } from "@/components/ui/button"; 
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";                     
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 
 export interface Motorcycle {

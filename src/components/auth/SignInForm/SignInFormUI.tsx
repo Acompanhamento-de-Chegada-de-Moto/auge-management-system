@@ -1,5 +1,6 @@
-import { UseFormRegister, FieldErrors } from "react-hook-form";
 import { Lock } from "lucide-react";
+import type { FieldErrors, UseFormRegister } from "react-hook-form";
+import type { SignUpInputType } from "@/@types/SingUpType";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -8,8 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";  
-import { type SignUpInputType } from "@/@types/SingUpType";
+import { Input } from "@/components/ui/input";
 
 interface SignInFormUIProps {
   title: "Logística" | "BDC";
@@ -18,7 +18,12 @@ interface SignInFormUIProps {
   onSubmit: (e?: React.BaseSyntheticEvent) => Promise<void>;
 }
 
-const SignInFormUI = ({ title, register, errors, onSubmit }: SignInFormUIProps) => {
+const SignInFormUI = ({
+  title,
+  register,
+  errors,
+  onSubmit,
+}: SignInFormUIProps) => {
   return (
     <div className="flex items-center justify-center py-20">
       <Card className="w-full max-w-sm">
@@ -32,10 +37,7 @@ const SignInFormUI = ({ title, register, errors, onSubmit }: SignInFormUIProps) 
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form
-            onSubmit={onSubmit}
-            className="flex flex-col gap-4"
-          >
+          <form onSubmit={onSubmit} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1">
               <Input {...register("email")} type="email" placeholder="Email" />
               {errors && (

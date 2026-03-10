@@ -1,7 +1,10 @@
 import { useState } from "react";
 import { supabase } from "@/lib/supabase/cliente";
 import { notify } from "@/lib/toast";
-import CreateClientFormUI, { Form, Motorcycle } from "./CreateClientFormUI";
+import CreateClientFormUI, {
+  type Form,
+  type Motorcycle,
+} from "./CreateClientFormUI";
 
 interface CreateClientFormProps {
   isOpen: boolean;
@@ -101,8 +104,8 @@ const CreateClientForm = ({ isOpen, onOpenChange }: CreateClientFormProps) => {
 
       notify.success("Cliente cadastrado e vinculado com sucesso!");
       handleClose();
-    } catch (error: any) {
-      notify.error("Erro ao salvar: " + error.message);
+    } catch (error) {
+      notify.error(`Erro ao salvar: ${error instanceof Error ? error.message : "Desconhecido"}`);
     } finally {
       setIsSubmitting(false);
     }

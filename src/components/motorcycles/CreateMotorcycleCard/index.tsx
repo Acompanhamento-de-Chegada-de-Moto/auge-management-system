@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { supabase } from "@/lib/supabase/cliente";
-import CreateMotorcycleCardUI, { FormMotorcycle } from "./CreateMotorcycleCardUI";
+import CreateMotorcycleCardUI, {
+  type FormMotorcycle,
+} from "./CreateMotorcycleCardUI";
 
 interface CreateMotorcycleCardProps {
   isOpen: boolean;

@@ -20,7 +20,11 @@ interface Client {
   name: string;
   city: string;
   created_at: string;
-  motorcycles?: any[];
+  motorcycles?: {
+    model: string;
+    chassis: string;
+    seller_name: string;
+  }[];
 }
 
 const BdcPage = () => {
@@ -105,7 +109,7 @@ const BdcPage = () => {
                   </TableHeader>
                   <TableBody>
                     {clients.length > 0 ? (
-                      clients.map((client: any) => {
+                      clients.map((client) => {
                         // O Supabase retorna um array na relação 1:N
                         const moto = client.motorcycles?.[0];
                         return (
