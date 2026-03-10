@@ -12,20 +12,20 @@ export function NavLinks() {
     {
       label: "Consulta",
       href: "/",
+      activePath: "/", // Para a home, a comparação costuma ser exata
       icon: Search,
-      value: "consulta",
     },
     {
       label: "BDC",
       href: "/bdc",
+      activePath: "/bdc",
       icon: Users,
-      value: "bdc",
     },
     {
-      label: "Logistica",
-      href: "/logistica",
+      label: "Logística",
+      href: "/logistics/sign-in",
+      activePath: "/logistics", // Aqui garantimos que qualquer sub-rota de /logistics ative o link
       icon: Truck,
-      value: "logistica",
     },
   ];
 
@@ -34,7 +34,12 @@ export function NavLinks() {
       <div className="w-full sm:w-auto grid grid-cols-3 sm:flex h-auto sm:h-9 bg-muted p-1 rounded-lg">
         {links.map((link) => {
           const Icon = link.icon;
-          const isActive = pathname.startsWith(link.href);
+
+          // Lógica de ativação ajustada
+          const isActive =
+            link.activePath === "/"
+              ? pathname === "/"
+              : pathname.startsWith(link.activePath);
 
           return (
             <Link
