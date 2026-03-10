@@ -61,6 +61,7 @@ const Logistics = () => {
     }
   };
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: intentional
   useEffect(() => {
     fetchMotorcycles(page);
   }, [page]);
@@ -79,13 +80,13 @@ const Logistics = () => {
       const worksheet = workbook.worksheets[0];
       if (!worksheet) return alert("Planilha inválida.");
 
-      const normalize = (value: any) =>
+      const normalize = (value: unknown) =>
         String(value || "")
           .trim()
           .toLowerCase();
 
       const headerRow = worksheet.getRow(1);
-      const headers = headerRow.values as any[];
+      const headers = headerRow.values as unknown[];
 
       let chassiIndex = -1;
       let modeloIndex = -1;
@@ -102,7 +103,7 @@ const Logistics = () => {
         return alert("A planilha deve conter: chassi, modelo e dataChegada.");
       }
 
-      const parseArrivalDate = (value: any): string | null => {
+      const parseArrivalDate = (value: unknown): string | null => {
         if (!value) return null;
 
         if (value instanceof Date) {
@@ -157,7 +158,7 @@ const Logistics = () => {
 
       const { error } = await supabase
         .from("motorcycles")
-        .insert(rowsToInsert, { ignoreDuplicates: true } as any);
+        .upsert(rowsToInsert, { ignoreDuplicates: true });
 
       if (error) {
         console.error(error);
