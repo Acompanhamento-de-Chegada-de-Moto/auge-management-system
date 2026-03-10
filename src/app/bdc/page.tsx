@@ -1,6 +1,7 @@
 "use client";
 
-import { Loader2, Pencil, Plus, Trash2 } from "lucide-react";
+import { Loader2, LogOut, Pencil, Plus, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import CreateClientForm from "@/components/clients/CreateClientForm";
 import { Button } from "@/components/ui/button";
@@ -31,6 +32,7 @@ const BdcPage = () => {
   const [clients, setClients] = useState<Client[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoadingClients, setIsLoadingClients] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -76,6 +78,17 @@ const BdcPage = () => {
           <div className="flex items-center gap-2">
             <Button size="sm" onClick={handleShowModal}>
               <Plus className="size-4 mr-1" /> Novo Cliente
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={async () => {
+                await supabase.auth.signOut();
+                router.push("/bdc/sign-in");
+              }}
+            >
+              <LogOut className="size-4 mr-2" />
+              Sair
             </Button>
           </div>
         </div>
