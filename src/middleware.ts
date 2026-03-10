@@ -43,7 +43,7 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL("/logistics", request.url));
     }
 
-    if (pathname.startsWith("/logistics") && role === "BDC") {
+    if (pathname.startsWith("/logistics") && role === "bdc") {
       return NextResponse.redirect(new URL("/bdc", request.url));
     }
 

@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Header from "@/components/Header";
-import { NavLinks } from "@/components/NavLinks";
+import { ToastContainer } from "react-toastify";
+import Header from "@/components/layout/Header";
+import { NavLinks } from "@/components/layout/NavLinks";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -35,6 +36,14 @@ export default function RootLayout({
             <NavLinks />
           </div>
           {children}
+          <ToastContainer
+            position="top-right"
+            autoClose={3000}
+            hideProgressBar={false}
+            newestOnTop
+            closeOnClick
+            pauseOnHover
+          />
         </main>
       </body>
     </html>

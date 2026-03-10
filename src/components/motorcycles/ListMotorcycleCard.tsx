@@ -1,5 +1,5 @@
 import type { Motorcycle } from "@/app/logistics/page";
-import { Card, CardContent } from "./ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -7,7 +7,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "./ui/table";
+} from "@/components/ui/table";
 
 interface ListMotorcycleProps {
   motorcycles: Motorcycle[];

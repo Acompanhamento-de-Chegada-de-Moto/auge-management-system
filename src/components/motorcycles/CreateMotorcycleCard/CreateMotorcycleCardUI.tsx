@@ -1,71 +1,36 @@
-import { useState } from "react";
-import { supabase } from "@/lib/supabase/cliente";
-import { Button } from "./ui/button";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
-  DialogContent,
+  DialogContent,            
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "./ui/dialog";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
-interface CreateMotorcycleCardProps {
-  isOpen: boolean;
-  handleOpenDialog: () => void;
+export interface FormMotorcycle {
+  chassis: string;
+  model: string;
+  arrivalDate: string;
 }
 
-const CreateMotorcycleCard = ({
+interface CreateMotorcycleCardUIProps {
+  isOpen: boolean;
+  handleOpenDialog: () => void;
+  formMotorcycle: FormMotorcycle;
+  setFormMotorcycle: React.Dispatch<React.SetStateAction<FormMotorcycle>>;
+  handleCreateArrival: () => void;
+}
+
+const CreateMotorcycleCardUI = ({
   isOpen,
   handleOpenDialog,
-}: CreateMotorcycleCardProps) => {
-  const [formMotorcycle, setFormMotorcycle] = useState({
-    chassis: "",
-    model: "",
-    arrivalDate: "",
-  });
-
-  const handleCreateArrival = async () => {
-    if (!formMotorcycle.chassis || !formMotorcycle.arrivalDate) {
-      alert("Por favor, preencha todos os campos.");
-      return;
-    }
-
-    try {
-      const { data, error } = await supabase
-        .from("motorcycles")
-        .insert([
-          {
-            chassis: formMotorcycle.chassis,
-            model: formMotorcycle.model,
-            arrivalDate: formMotorcycle.arrivalDate,
-          },
-        ])
-        .select();
-
-      if (error) {
-        console.error("Erro do Supabase:", error.message);
-        alert(error.message);
-        return;
-      }
-
-      console.log("Moto criada:", data);
-
-      // limpa o form
-      setFormMotorcycle({
-        chassis: "",
-        model: "",
-        arrivalDate: "",
-      });
-
-      handleOpenDialog();
-    } catch (error) {
-      console.error("Erro inesperado:", error);
-    }
-  };
-
+  formMotorcycle,
+  setFormMotorcycle,
+  handleCreateArrival,
+}: CreateMotorcycleCardUIProps) => {
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenDialog}>
       <DialogContent className="sm:max-w-md">
@@ -131,4 +96,5 @@ const CreateMotorcycleCard = ({
     </Dialog>
   );
 };
-export default CreateMotorcycleCard;
+
+export default CreateMotorcycleCardUI;

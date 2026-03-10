@@ -1,74 +1,57 @@
 "use client";
 
-import {
-  Badge,
-  ClipboardCheck,
-  FileText,
-  LogOut,
-  MapPin,
-  Plus,
-  Truck,
-  User,
-} from "lucide-react";
+import { Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import CreateClientForm from "@/components/CreateClientForm";
+import CreateClientForm from "@/components/clients/CreateClientForm";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { supabase } from "@/lib/supabase/cliente";
 
-export type MotorcycleArrival = {
-  id: string;
-  chassis: string;
-  model: string;
-  arrivalDate: string;
-  clientId: string | null;
-  createdAt: string;
-  updatedAt: string;
-};
-
-export type RegistrationStatus =
-  | "Pendente"
-  | "Em_Emplacamento"
-  | "Emplacado"
-  | "Entregue";
-
-export type Client = {
+interface Client {
   id: string;
   name: string;
-  salesperson: string;
-  registration_status: RegistrationStatus;
-  billing_date: string;
+  city: string;
   created_at: string;
-  city?: string | null;
-  motorcycle_arrival?: MotorcycleArrival[] | MotorcycleArrival | null;
-};
+  motorcycles?: any[];
+}
 
 const BdcPage = () => {
   const [clients, setClients] = useState<Client[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isLoadingClients, setIsLoadingClients] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Buscando clientes e os dados da moto vinculada
+        setIsLoadingClients(true);
         const { data, error } = await supabase
-          .from("client")
+          .from("clients")
           .select(
             `
-            *,
-            motorcycle_arrival (*)
-          `,
+          *,
+          motorcycles (*) 
+        `,
           )
-          .order("createdAt", { ascending: false });
-
-        console.log(data);
+          .order("created_at", { ascending: false });
 
         if (error) throw error;
+
         setClients(data || []);
       } catch (error) {
         console.error("Erro ao buscar dados:", error);
+      } finally {
+        setIsLoadingClients(false);
       }
     };
+
     fetchData();
   }, []);
 
@@ -95,9 +78,84 @@ const BdcPage = () => {
 
         <CreateClientForm
           isOpen={isModalOpen}
-          onOpenChange={setIsModalOpen}
-          onSubmit={handleShowModal}
+          onOpenChange={(open) => {
+            setIsModalOpen(open);
+          }}
         />
+
+        <div className="mt-6">
+          <p className="text-sm font-medium mb-3">Clientes Cadastrados</p>
+          {isLoadingClients ? (
+            <div className="flex justify-center py-10">
+              <Loader2 className="animate-spin text-primary" />
+            </div>
+          ) : (
+            <Card>
+              <CardContent className="p-0 overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/50">
+                      <TableHead>Cliente</TableHead>
+                      <TableHead>Cidade</TableHead>
+                      <TableHead>Modelo</TableHead>
+                      <TableHead>Chassi</TableHead>
+                      <TableHead>Vendedor</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {clients.length > 0 ? (
+                      clients.map((client: any) => {
+                        // O Supabase retorna um array na relação 1:N
+                        const moto = client.motorcycles?.[0];
+                        return (
+                          <TableRow key={client.id}>
+                            <TableCell className="font-medium">
+                              {client.name}
+                            </TableCell>
+                            <TableCell>{client.city || "-"}</TableCell>
+                            <TableCell>{moto?.model || "-"}</TableCell>
+                            <TableCell className="font-mono text-xs">
+                              {moto?.chassis || "-"}
+                            </TableCell>
+                            <TableCell>{moto?.seller_name || "-"}</TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex justify-end gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="size-8"
+                                >
+                                  <Pencil className="size-3.5" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="size-8 text-destructive"
+                                >
+                                  <Trash2 className="size-3.5" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
+                    ) : (
+                      <TableRow>
+                        <TableCell
+                          colSpan={6}
+                          className="h-24 text-center text-muted-foreground"
+                        >
+                          Nenhum cliente encontrado.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
+        </div>
       </div>
     </div>
   );

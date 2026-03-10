@@ -4,8 +4,8 @@ import ExcelJS from "exceljs";
 import { FileSpreadsheet, Loader2, LogOut, Plus, Upload } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import CreateMotorcycleCard from "@/components/CreateMotorcycleCard";
-import ListMotorcycleCard from "@/components/ListMotorcycleCard";
+import CreateMotorcycleCard from "@/components/motorcycles/CreateMotorcycleCard";
+import ListMotorcycleCard from "@/components/motorcycles/ListMotorcycleCard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/lib/supabase/cliente";
@@ -157,7 +157,7 @@ const Logistics = () => {
 
       const { error } = await supabase
         .from("motorcycles")
-        .insert(rowsToInsert, { ignoreDuplicates: true });
+        .insert(rowsToInsert, { ignoreDuplicates: true } as any);
 
       if (error) {
         console.error(error);
@@ -267,25 +267,27 @@ const Logistics = () => {
         </div>
       )}
 
-      <div className="flex gap-2 mt-4">
-        <Button
-          disabled={page === 1}
-          onClick={() => setPage((prev) => prev - 1)}
-        >
-          Anterior
-        </Button>
+      {motorcyclesFetched.length >= 10 && (
+        <div className="flex items-center gap-2 mt-4">
+          <Button
+            disabled={page === 1}
+            onClick={() => setPage((prev) => prev - 1)}
+          >
+            Anterior
+          </Button>
 
-        <span>
-          Página {page} de {Math.ceil(total / pageSize) || 1}
-        </span>
+          <span className="inline-block">
+            Página {page} de {Math.ceil(total / pageSize) || 1}
+          </span>
 
-        <Button
-          disabled={page >= Math.ceil(total / pageSize)}
-          onClick={() => setPage((prev) => prev + 1)}
-        >
-          Próxima
-        </Button>
-      </div>
+          <Button
+            disabled={page >= Math.ceil(total / pageSize)}
+            onClick={() => setPage((prev) => prev + 1)}
+          >
+            Próxima
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

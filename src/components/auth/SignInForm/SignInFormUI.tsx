@@ -1,53 +1,24 @@
-"use client";
-
-import { zodResolver } from "@hookform/resolvers/zod";
+import { UseFormRegister, FieldErrors } from "react-hook-form";
 import { Lock } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
-import { type SignUpInputType, signUpSchema } from "@/@types/SingUpType";
-import { supabase } from "@/lib/supabase/cliente";
-import { Button } from "./ui/button";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "./ui/card";
-import { Input } from "./ui/input";
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";  
+import { type SignUpInputType } from "@/@types/SingUpType";
 
-interface SignInFormProps {
+interface SignInFormUIProps {
   title: "Logística" | "BDC";
+  register: UseFormRegister<SignUpInputType>;
+  errors: FieldErrors<SignUpInputType>;
+  onSubmit: (e?: React.BaseSyntheticEvent) => Promise<void>;
 }
 
-const SignInForm = ({ title }: SignInFormProps) => {
-  const router = useRouter();
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting, isValid },
-  } = useForm<SignUpInputType>({
-    resolver: zodResolver(signUpSchema),
-  });
-
-  const onSubmit = async (data: SignUpInputType) => {
-    const {
-      data: { user },
-      error,
-    } = await supabase.auth.signInWithPassword({
-      email: data.email,
-      password: data.password,
-    });
-
-    if (error) {
-      alert("Não foi possível fazer login");
-      console.log(error);
-      return;
-    }
-
-    return router.push("/logistics");
-  };
-
+const SignInFormUI = ({ title, register, errors, onSubmit }: SignInFormUIProps) => {
   return (
     <div className="flex items-center justify-center py-20">
       <Card className="w-full max-w-sm">
@@ -62,7 +33,7 @@ const SignInForm = ({ title }: SignInFormProps) => {
         </CardHeader>
         <CardContent>
           <form
-            onSubmit={handleSubmit(onSubmit)}
+            onSubmit={onSubmit}
             className="flex flex-col gap-4"
           >
             <div className="flex flex-col gap-1">
@@ -91,4 +62,5 @@ const SignInForm = ({ title }: SignInFormProps) => {
     </div>
   );
 };
-export default SignInForm;
+
+export default SignInFormUI;
