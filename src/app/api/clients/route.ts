@@ -1,5 +1,5 @@
-import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 function maskName(name: string): string {
   if (!name) return "";
@@ -14,15 +14,26 @@ export async function GET(request: Request) {
 
   try {
     const supabase = await createSupabaseServerClient();
-    let supabaseQuery = supabase
-      .from("clients_view_public")
-      .select("*");
+    let supabaseQuery = supabase.from("motorcycles").select(`
+        id,
+        chassis,
+        model,
+        arrival_date,
+        arrival_status,
+        billing_date,
+        seller_name,
+        registration_status,
+        clients!inner (
+          name,
+          city
+        )
+      `);
 
     if (query) {
       const words = query.trim().split(/\s+/);
       for (const word of words) {
         if (word) {
-          supabaseQuery = supabaseQuery.ilike("name", `%${word}%`);
+          supabaseQuery = supabaseQuery.ilike("clients.name", `%${word}%`);
         }
       }
     }
@@ -32,14 +43,31 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    const maskedData = (data || []).map((client: any) => ({
-      ...client,
-      client_name: maskName(client.name),
-      name: 'Olha aqui não man, ta mascarado'
-    }));
+    interface ClientJoin {
+      name: string;
+      city: string;
+    }
 
-    return NextResponse.json(maskedData);
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    const formattedData = (data || []).map((item) => {
+      const client = item.clients as unknown as ClientJoin;
+      return {
+        id: item.id,
+        chassis: item.chassis || "-",
+        model: item.model || "-",
+        arrivalDate: item.arrival_date || undefined,
+        arrivalStatus: item.arrival_status,
+        billingDate: item.billing_date || undefined,
+        sellerName: item.seller_name || "-",
+        registrationStatus: item.registration_status,
+        city: client?.city || "Não informada",
+        clientName: maskName(client?.name || "Sem nome"),
+      };
+    });
+
+    return NextResponse.json(formattedData);
+  } catch (error) {
+    const errorMessage =
+      error instanceof Error ? error.message : "Erro interno";
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

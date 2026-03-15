@@ -15,17 +15,32 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
   ARRIVAL_STATUS_LABELS,
-  REGISTRATION_STATUS_LABELS,
   formatDate,
   getArrivalStatusColor,
   getRegistrationStatusColor,
+  REGISTRATION_STATUS_LABELS,
 } from "@/lib/utils/formatters";
 
+interface Client {
+  id: string;
+  clientName: string;
+  model: string;
+  sellerName: string;
+  city: string;
+  chassis: string;
+  billingDate: string;
+  registrationStatus: string;
+  arrivalStatus: string;
+  arrivalDate: string;
+  departureDate: string | null;
+}
 
 export default function Home() {
   const [query, setQuery] = useState("");
-  const [clients, setClients] = useState<any[] | null>(null);
+  const [clients, setClients] = useState<Client[] | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  console.log(clients);
 
   useEffect(() => {
     const fetchResults = async () => {
@@ -37,8 +52,10 @@ export default function Home() {
       setIsLoading(true);
 
       try {
-        const response = await fetch(`/api/clients?query=${encodeURIComponent(query)}`);
-        
+        const response = await fetch(
+          `/api/clients?query=${encodeURIComponent(query)}`,
+        );
+
         if (!response.ok) {
           const errorData = await response.json();
           throw new Error(errorData.error || "Erro na busca");
@@ -47,12 +64,12 @@ export default function Home() {
         const data = await response.json();
         const today = new Date().toISOString().split("T")[0];
 
-        const mappedData = (data || []).map((row: any) => {
-          let arrivalStatus = row.arrival_status || "WAITING";
+        const mappedData = (data || []).map((row: Client) => {
+          let arrivalStatus = row.arrivalStatus || "WAITING";
 
           if (
-            row.arrival_date &&
-            row.arrival_date <= today &&
+            row.arrivalDate &&
+            row.arrivalDate <= today &&
             arrivalStatus === "WAITING"
           ) {
             arrivalStatus = "ARRIVED";
@@ -60,16 +77,16 @@ export default function Home() {
 
           return {
             id: row.id,
-            clientName: row.client_name,
+            clientName: row.clientName,
             model: row.model || "-",
-            sellerName: row.seller_name || "-",
+            sellerName: row.sellerName || "-",
             city: row.city || "-",
-            chassis: row.chassi || row.chassis || "-",
-            billingDate: row.billing_date,
-            registrationStatus: row.registration_status || "PENDING",
+            chassis: row.chassis || "-",
+            billingDate: row.billingDate,
+            registrationStatus: row.registrationStatus || "PENDING",
             arrivalStatus: arrivalStatus,
-            arrivalDate: row.arrival_date,
-            departureDate: null,
+            arrivalDate: row.arrivalDate,
+            departureDate: row.departureDate || null,
           };
         });
 
@@ -115,19 +132,16 @@ export default function Home() {
           <p className="text-sm text-muted-foreground">Buscando...</p>
         )}
 
-        {query.length >= 2 &&
-          !isLoading &&
-          clients &&
-          clients.length === 0 && (
-            <Card>
-              <CardContent className="py-12 text-center">
-                <Search className="mx-auto size-10 text-muted-foreground/40 mb-3" />
-                <p className="text-muted-foreground">
-                  Nenhum resultado encontrado para &ldquo;{query}&rdquo;
-                </p>
-              </CardContent>
-            </Card>
-          )}
+        {query.length >= 2 && !isLoading && clients && clients.length === 0 && (
+          <Card>
+            <CardContent className="py-12 text-center">
+              <Search className="mx-auto size-10 text-muted-foreground/40 mb-3" />
+              <p className="text-muted-foreground">
+                Nenhum resultado encontrado para &ldquo;{query}&rdquo;
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
         {query.length < 3 && (
           <Card>
@@ -143,7 +157,7 @@ export default function Home() {
         {clients && clients.length > 0 && (
           <div className="flex flex-col gap-4">
             {clients.map((client) => (
-              <Card key={client.id} className="overflow-hidden">
+              <Card key={client.id + Math.random()} className="overflow-hidden">
                 <CardContent className="p-0">
                   <div className="flex flex-col lg:flex-row">
                     {/* Info principal */}

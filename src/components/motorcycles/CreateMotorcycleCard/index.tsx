@@ -41,7 +41,9 @@ const CreateMotorcycleCard = ({
       handleOpenDialog();
     } catch (error) {
       console.error("Erro inesperado:", error);
-      alert(error instanceof Error ? error.message : "Erro ao registrar chegada.");
+      alert(
+        error instanceof Error ? error.message : "Erro ao registrar chegada.",
+      );
     }
   };
 

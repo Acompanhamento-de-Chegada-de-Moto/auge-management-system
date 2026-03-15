@@ -17,16 +17,15 @@ export interface Client {
 export interface CreateClientPayload {
   name: string;
   city: string;
+  chassis: string;
+  seller_name: string;
+  billingDate: string;
 }
 
 export interface UpdateClientPayload {
   name: string;
   city: string;
 }
-
-// -------------------------------------------------------------------
-// GET
-// -------------------------------------------------------------------
 
 export async function getClientsWithMotorcycles(): Promise<Client[]> {
   const { data, error } = await supabase
@@ -44,14 +43,14 @@ export async function getClientsWithMotorcycles(): Promise<Client[]> {
   return data ?? [];
 }
 
-// -------------------------------------------------------------------
-// CREATE
-// -------------------------------------------------------------------
-
-export async function createClient(payload: CreateClientPayload): Promise<Client> {
+export async function createClient(
+  payload: CreateClientPayload,
+): Promise<Client> {
   const { data, error } = await supabase
     .from("clients")
-    .insert([{ name: payload.name, city: payload.city }])
+    .insert([
+      { name: payload.name, city: payload.city, chassis: payload.chassis },
+    ])
     .select()
     .single();
 
@@ -59,10 +58,6 @@ export async function createClient(payload: CreateClientPayload): Promise<Client
 
   return data;
 }
-
-// -------------------------------------------------------------------
-// UPDATE
-// -------------------------------------------------------------------
 
 export async function updateClient(
   id: string,
@@ -75,10 +70,6 @@ export async function updateClient(
 
   if (error) throw error;
 }
-
-// -------------------------------------------------------------------
-// DELETE
-// -------------------------------------------------------------------
 
 export async function deleteClient(id: string): Promise<void> {
   const { error } = await supabase

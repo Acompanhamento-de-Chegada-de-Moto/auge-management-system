@@ -95,9 +95,7 @@ export async function insertMotorcycles(
 export async function createMotorcycle(
   payload: CreateLinkedMotorcyclePayload,
 ): Promise<void> {
-  const { error } = await supabase
-    .from("motorcycles")
-    .insert([payload]);
+  const { error } = await supabase.from("motorcycles").insert([payload]);
 
   if (error) throw error;
 }

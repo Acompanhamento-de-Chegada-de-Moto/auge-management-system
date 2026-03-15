@@ -11,9 +11,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/lib/supabase/cliente";
 import { parseArrivalDate } from "@/lib/utils/dateParser";
 import {
-  type Motorcycle,
   getMotorcyclesPaginated,
   insertMotorcycles,
+  type Motorcycle,
 } from "@/services/motorcycleService";
 
 const Logistics = () => {
@@ -33,7 +33,10 @@ const Logistics = () => {
     if (isFirstLoad) setLoading(true);
 
     try {
-      const { data, count } = await getMotorcyclesPaginated(currentPage, pageSize);
+      const { data, count } = await getMotorcyclesPaginated(
+        currentPage,
+        pageSize,
+      );
       setMotorcycleFetched(data);
       setTotal(count);
     } catch (error) {

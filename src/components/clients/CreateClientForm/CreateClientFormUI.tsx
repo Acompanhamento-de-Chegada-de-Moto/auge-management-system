@@ -24,7 +24,10 @@ export type SituacaoEmplacamento =
   | "emplacado"
   | "entregue";
 
-export const SITUACAO_EMPLACAMENTO_LABELS: Record<SituacaoEmplacamento, string> = {
+export const SITUACAO_EMPLACAMENTO_LABELS: Record<
+  SituacaoEmplacamento,
+  string
+> = {
   pendente: "Pendente",
   em_emplacamento: "Em Emplacamento",
   emplacado: "Emplacado",
@@ -52,6 +55,7 @@ export interface Form {
   billing_date: string;
   registration_status: SituacaoEmplacamento;
   registration_exit_date: string;
+  chassis: string;
 }
 
 interface CreateClientFormUIProps {
@@ -187,7 +191,9 @@ const CreateClientFormUI = ({
                 <Label htmlFor="model">Modelo</Label>
                 <Input
                   id="model"
-                  value={motorcycleFound ? (fetchedMotorcycle.model || "") : form.model}
+                  value={
+                    motorcycleFound ? fetchedMotorcycle.model || "" : form.model
+                  }
                   onChange={(e) => updateField("model", e.target.value)}
                   placeholder="Ex: Honda CG 160 Titan"
                   disabled={motorcycleFound}
@@ -195,7 +201,7 @@ const CreateClientFormUI = ({
                 />
                 {motorcycleFound && (
                   <p className="text-xs text-muted-foreground">
-                    Preenchido automaticamente pela logistica
+                    Preenchido automaticamente pela logística
                   </p>
                 )}
               </div>
@@ -254,7 +260,10 @@ const CreateClientFormUI = ({
                 <Select
                   value={form.registration_status}
                   onValueChange={(v) =>
-                    updateField("registration_status", v as SituacaoEmplacamento)
+                    updateField(
+                      "registration_status",
+                      v as SituacaoEmplacamento,
+                    )
                   }
                 >
                   <SelectTrigger>
@@ -266,7 +275,7 @@ const CreateClientFormUI = ({
                         <SelectItem key={key} value={key}>
                           {label}
                         </SelectItem>
-                      )
+                      ),
                     )}
                   </SelectContent>
                 </Select>
@@ -297,7 +306,9 @@ const CreateClientFormUI = ({
               </Button>
               <Button
                 onClick={handleSubmit}
-                disabled={isSubmitting || (!motorcycleFound && !notFoundMotorcycle)}
+                disabled={
+                  isSubmitting || (!motorcycleFound && !notFoundMotorcycle)
+                }
               >
                 {isSubmitting ? (
                   <Loader2 className="h-4 w-4 animate-spin" />

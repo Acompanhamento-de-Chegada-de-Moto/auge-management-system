@@ -2,10 +2,10 @@ import { useState } from "react";
 import { notify } from "@/lib/toast";
 import { createClient } from "@/services/clientService";
 import {
-  type Motorcycle,
   createMotorcycle,
   getMotorcycleByChassis,
   linkMotorcycleToClient,
+  type Motorcycle,
 } from "@/services/motorcycleService";
 import CreateClientFormUI, {
   type Form,
@@ -25,6 +25,7 @@ const initialForm: Form = {
   billing_date: "",
   registration_status: "pendente",
   registration_exit_date: "",
+  chassis: "",
 };
 
 const CreateClientForm = ({ isOpen, onOpenChange }: CreateClientFormProps) => {
@@ -59,7 +60,9 @@ const CreateClientForm = ({ isOpen, onOpenChange }: CreateClientFormProps) => {
       setNotFoundMotorcycle(false);
       setFetchedMotorcycle(null);
 
-      const motorcycle = await getMotorcycleByChassis(chassisQuery.toUpperCase());
+      const motorcycle = await getMotorcycleByChassis(
+        chassisQuery.toUpperCase(),
+      );
 
       if (!motorcycle) {
         setNotFoundMotorcycle(true);
@@ -75,6 +78,7 @@ const CreateClientForm = ({ isOpen, onOpenChange }: CreateClientFormProps) => {
         billing_date: motorcycle.billing_date
           ? motorcycle.billing_date.split("T")[0]
           : "",
+        chassis: motorcycle.chassis,
       }));
       notify.success("Moto encontrada com sucesso!");
     } catch {
@@ -99,13 +103,19 @@ const CreateClientForm = ({ isOpen, onOpenChange }: CreateClientFormProps) => {
       setIsSubmitting(true);
 
       // 1. Create the client
-      const newClient = await createClient({ name: form.name, city: form.city });
+      const newClient = await createClient({
+        name: form.name,
+        city: form.city,
+        chassis: form.chassis,
+        billingDate: form.billing_date,
+        seller_name: form.seller_name,
+      });
 
       if (fetchedMotorcycle) {
         // 2a. Motorcycle already exists in logistics — link it and update fields
         const arrivedStatus = hasArrived(fetchedMotorcycle.arrival_date)
           ? "ARRIVED"
-          : fetchedMotorcycle.arrival_status ?? "WAITING";
+          : (fetchedMotorcycle.arrival_status ?? "WAITING");
 
         await linkMotorcycleToClient(fetchedMotorcycle.id, {
           client_id: newClient.id,
@@ -163,7 +173,6 @@ const CreateClientForm = ({ isOpen, onOpenChange }: CreateClientFormProps) => {
     />
   );
 };
-
 
 function mapRegistrationStatus(status: SituacaoEmplacamento): string {
   switch (status) {
