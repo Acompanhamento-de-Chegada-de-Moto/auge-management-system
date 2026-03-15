@@ -29,7 +29,6 @@ const SignInForm = ({ title }: SignInFormProps) => {
 
     if (error) {
       alert("Não foi possível fazer login");
-      console.log(error);
       return;
     }
 

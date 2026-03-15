@@ -1,4 +1,4 @@
-import { Loader2, Search, XCircle } from "lucide-react";
+import { CheckCircle2, Loader2, Search, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -8,25 +8,54 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { formatDate } from "@/lib/utils/formatters";
+
+export type SituacaoEmplacamento =
+  | "pendente"
+  | "em_emplacamento"
+  | "emplacado"
+  | "entregue";
+
+export const SITUACAO_EMPLACAMENTO_LABELS: Record<
+  SituacaoEmplacamento,
+  string
+> = {
+  pendente: "Pendente",
+  em_emplacamento: "Em Emplacamento",
+  emplacado: "Emplacado",
+  entregue: "Entregue",
+};
 
 export interface Motorcycle {
   id: string;
   chassis: string;
-  model: string;
+  model: string | null;
   arrival_date: string | null;
-  arrival_status: "WAITING" | "ARRIVED" | string;
+  arrival_status: "WAITING" | "ARRIVED" | string | null;
   billing_date: string | null;
   client_id: string | null;
-  created_at: string;
-  registration_status: "PENDING" | "REGISTERED" | string;
+  created_at: string | null;
+  registration_status: "PENDING" | "REGISTERED" | string | null;
   seller_name: string | null;
 }
 
 export interface Form {
-  arrival_date: string;
-  seller_name: string;
   name: string;
   city: string;
+  seller_name: string;
+  model: string;
+  billing_date: string;
+  registration_status: SituacaoEmplacamento;
+  registration_exit_date: string;
+  chassis: string;
 }
 
 interface CreateClientFormUIProps {
@@ -58,6 +87,9 @@ const CreateClientFormUI = ({
   handleSubmit,
   isSubmitting,
 }: CreateClientFormUIProps) => {
+  const motorcycleFound = fetchedMotorcycle !== null;
+  const showForm = motorcycleFound || notFoundMotorcycle;
+
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -68,6 +100,7 @@ const CreateClientFormUI = ({
           </DialogDescription>
         </DialogHeader>
 
+        {/* Step 1: Chassis search */}
         <div className="rounded-lg border border-border bg-muted/30 p-4">
           <p className="text-sm font-medium mb-3">
             1. Consultar chassi na logística
@@ -120,46 +153,151 @@ const CreateClientFormUI = ({
           </div>
         )}
 
-        {(notFoundMotorcycle || fetchedMotorcycle) && (
-          <div className="rounded-lg border border-border p-4 mt-4">
+        {/* Step 2: Client data */}
+        {showForm && (
+          <div className="rounded-lg border border-border p-4">
             <p className="text-sm font-medium text-foreground mb-3">
               2. Preencher dados do cliente
             </p>
-
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Input
-                placeholder="Nome do cliente"
-                value={form.name}
-                onChange={(e) => updateField("name", e.target.value)}
-              />
-              <Input
-                placeholder="Vendedor"
-                value={form.seller_name}
-                onChange={(e) => updateField("seller_name", e.target.value)}
-              />
-              <Input
-                placeholder="Cidade"
-                value={form.city}
-                onChange={(e) => updateField("city", e.target.value)}
-              />
-              <Input
-                placeholder="Modelo"
-                value={fetchedMotorcycle?.model || ""}
-                disabled
-                className="bg-muted font-mono"
-              />
-              <Input
-                placeholder="Chassi"
-                value={fetchedMotorcycle?.chassis || ""}
-                disabled
-                className="bg-muted font-mono"
-              />
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="name">Cliente</Label>
+                <Input
+                  id="name"
+                  value={form.name}
+                  onChange={(e) => updateField("name", e.target.value)}
+                  placeholder="Nome do cliente"
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="seller_name">Vendedor</Label>
+                <Input
+                  id="seller_name"
+                  value={form.seller_name}
+                  onChange={(e) => updateField("seller_name", e.target.value)}
+                  placeholder="Nome do vendedor"
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="city">Cidade</Label>
+                <Input
+                  id="city"
+                  value={form.city}
+                  onChange={(e) => updateField("city", e.target.value)}
+                  placeholder="Cidade"
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="model">Modelo</Label>
+                <Input
+                  id="model"
+                  value={
+                    motorcycleFound ? fetchedMotorcycle.model || "" : form.model
+                  }
+                  onChange={(e) => updateField("model", e.target.value)}
+                  placeholder="Ex: Honda CG 160 Titan"
+                  disabled={motorcycleFound}
+                  className={motorcycleFound ? "bg-muted" : ""}
+                />
+                {motorcycleFound && (
+                  <p className="text-xs text-muted-foreground">
+                    Preenchido automaticamente pela logística
+                  </p>
+                )}
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="chassis">Chassi</Label>
+                <Input
+                  id="chassis"
+                  value={fetchedMotorcycle?.chassis || chassisQuery}
+                  disabled
+                  className="bg-muted font-mono"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Definido pela busca acima
+                </p>
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="billing_date">Data de Faturamento</Label>
+                <Input
+                  id="billing_date"
+                  type="date"
+                  value={form.billing_date}
+                  onChange={(e) => updateField("billing_date", e.target.value)}
+                />
+              </div>
 
-              <Input
-                type="date"
-                value={form.arrival_date}
-                onChange={(e) => updateField("arrival_date", e.target.value)}
-              />
+              {/* Status de Chegada - somente leitura, derivado automaticamente */}
+              <div className="flex flex-col gap-2">
+                <Label>Status de Chegada</Label>
+                <div className="flex items-center gap-2 h-9 px-3 rounded-md border border-input bg-muted">
+                  {motorcycleFound ? (
+                    <>
+                      <CheckCircle2 className="size-4 text-emerald-600" />
+                      <span className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
+                        Chegou
+                      </span>
+                      <span className="text-xs text-muted-foreground ml-auto">
+                        {formatDate(fetchedMotorcycle?.arrival_date ?? null)}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <XCircle className="size-4 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">
+                        Aguardando
+                      </span>
+                    </>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Atualizado automaticamente pela logistica
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <Label>Situacao de Emplacamento</Label>
+                <Select
+                  value={form.registration_status}
+                  onValueChange={(v) =>
+                    updateField(
+                      "registration_status",
+                      v as SituacaoEmplacamento,
+                    )
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(SITUACAO_EMPLACAMENTO_LABELS).map(
+                      ([key, label]) => (
+                        <SelectItem key={key} value={key}>
+                          {label}
+                        </SelectItem>
+                      ),
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {(form.registration_status === "em_emplacamento" ||
+                form.registration_status === "emplacado" ||
+                form.registration_status === "entregue") && (
+                <div className="flex flex-col gap-2 sm:col-span-2">
+                  <Label htmlFor="registration_exit_date">
+                    Data de Saida para Emplacamento
+                  </Label>
+                  <Input
+                    id="registration_exit_date"
+                    type="date"
+                    value={form.registration_exit_date}
+                    onChange={(e) =>
+                      updateField("registration_exit_date", e.target.value)
+                    }
+                  />
+                </div>
+              )}
             </div>
 
             <div className="flex justify-end gap-2 mt-6">
@@ -168,7 +306,9 @@ const CreateClientFormUI = ({
               </Button>
               <Button
                 onClick={handleSubmit}
-                disabled={isSubmitting || !fetchedMotorcycle}
+                disabled={
+                  isSubmitting || (!motorcycleFound && !notFoundMotorcycle)
+                }
               >
                 {isSubmitting ? (
                   <Loader2 className="h-4 w-4 animate-spin" />

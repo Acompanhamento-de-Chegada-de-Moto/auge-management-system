@@ -17,20 +17,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { supabase } from "@/lib/supabase/cliente";
-
-interface Client {
-  id: string;
-  name: string;
-  city: string;
-  created_at: string;
-  motorcycles?: {
-    id: string;
-    model: string;
-    chassis: string;
-    seller_name: string;
-    arrival_date: string | null;
-  }[];
-}
+import {
+  type Client,
+  getClientsWithMotorcycles,
+} from "@/services/clientService";
 
 const BdcPage = () => {
   const [clients, setClients] = useState<Client[]>([]);
@@ -45,19 +35,8 @@ const BdcPage = () => {
   const fetchData = useCallback(async () => {
     try {
       setIsLoadingClients(true);
-      const { data, error } = await supabase
-        .from("clients")
-        .select(
-          `
-        *,
-        motorcycles (*) 
-      `,
-        )
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-
-      setClients(data || []);
+      const data = await getClientsWithMotorcycles();
+      setClients(data);
     } catch (error) {
       console.error("Erro ao buscar dados:", error);
     } finally {

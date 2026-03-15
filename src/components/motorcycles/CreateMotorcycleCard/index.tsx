@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { supabase } from "@/lib/supabase/cliente";
+import { createMotorcycleArrival } from "@/services/motorcycleService";
 import CreateMotorcycleCardUI, {
   type FormMotorcycle,
 } from "./CreateMotorcycleCardUI";
@@ -26,24 +26,11 @@ const CreateMotorcycleCard = ({
     }
 
     try {
-      const { data, error } = await supabase
-        .from("motorcycles")
-        .insert([
-          {
-            chassis: formMotorcycle.chassis,
-            model: formMotorcycle.model,
-            arrivalDate: formMotorcycle.arrivalDate,
-          },
-        ])
-        .select();
-
-      if (error) {
-        console.error("Erro do Supabase:", error.message);
-        alert(error.message);
-        return;
-      }
-
-      console.log("Moto criada:", data);
+      await createMotorcycleArrival({
+        chassis: formMotorcycle.chassis,
+        model: formMotorcycle.model,
+        arrivalDate: formMotorcycle.arrivalDate,
+      });
 
       setFormMotorcycle({
         chassis: "",
@@ -54,6 +41,9 @@ const CreateMotorcycleCard = ({
       handleOpenDialog();
     } catch (error) {
       console.error("Erro inesperado:", error);
+      alert(
+        error instanceof Error ? error.message : "Erro ao registrar chegada.",
+      );
     }
   };
 
