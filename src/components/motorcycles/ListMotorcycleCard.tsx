@@ -1,4 +1,4 @@
-import type { Motorcycle } from "@/app/logistics/page";
+import type { Motorcycle } from "@/services/motorcycleService";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
