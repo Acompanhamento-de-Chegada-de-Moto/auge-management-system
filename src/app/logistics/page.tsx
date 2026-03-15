@@ -10,19 +10,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/lib/supabase/cliente";
 import { parseArrivalDate } from "@/lib/utils/dateParser";
-
-export interface Motorcycle {
-  id: string;
-  chassis: string;
-  model: string | null;
-  arrival_date: string | null;
-  arrival_status: "WAITING" | "ARRIVED" | "DELIVERED" | null;
-  billing_date: string | null;
-  seller_name: string | null;
-  client_id: string | null;
-  registration_status: "PENDING" | "REGISTERED" | "CANCELED" | null;
-  created_at: string | null;
-}
+import {
+  type Motorcycle,
+  getMotorcyclesPaginated,
+  insertMotorcycles,
+} from "@/services/motorcycleService";
 
 const Logistics = () => {
   const [page, setPage] = useState(1);
@@ -40,20 +32,12 @@ const Logistics = () => {
   const fetchMotorcycles = async (currentPage: number) => {
     if (isFirstLoad) setLoading(true);
 
-    const from = (currentPage - 1) * pageSize;
-    const to = from + pageSize - 1;
-
-    const { data, error, count } = await supabase
-      .from("motorcycles")
-      .select("*", { count: "exact" })
-      .order("created_at", { ascending: false })
-      .range(from, to);
-
-    if (error) {
+    try {
+      const { data, count } = await getMotorcyclesPaginated(currentPage, pageSize);
+      setMotorcycleFetched(data);
+      setTotal(count);
+    } catch (error) {
       console.error(error);
-    } else {
-      setMotorcycleFetched((data as Motorcycle[]) ?? []);
-      setTotal(count ?? 0);
     }
 
     if (isFirstLoad) {
@@ -132,12 +116,10 @@ const Logistics = () => {
       if (!rowsToInsert.length)
         return alert("Nenhuma linha válida encontrada.");
 
-      const { error } = await supabase
-        .from("motorcycles")
-        .upsert(rowsToInsert, { ignoreDuplicates: true });
-
-      if (error) {
-        console.error(error);
+      try {
+        await insertMotorcycles(rowsToInsert);
+      } catch (insertError) {
+        console.error(insertError);
         return alert("Erro ao inserir dados.");
       }
 

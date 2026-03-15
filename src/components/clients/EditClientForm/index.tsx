@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase/cliente";
 import { notify } from "@/lib/toast";
+import { updateClient } from "@/services/clientService";
+import { updateMotorcycle } from "@/services/motorcycleService";
 import EditClientFormUI, { type Form } from "./EditClientFormUI";
 
 interface Client {
@@ -67,26 +68,14 @@ const EditClientForm = ({
     try {
       setIsSubmitting(true);
 
-      // Update client
-      const { error: clientError } = await supabase
-        .from("clients")
-        .update({ name: form.name, city: form.city })
-        .eq("id", client.id);
+      await updateClient(client.id, { name: form.name, city: form.city });
 
-      if (clientError) throw clientError;
-
-      // Update motorcycle if it exists
       const moto = client.motorcycles?.[0];
       if (moto) {
-        const { error: motoError } = await supabase
-          .from("motorcycles")
-          .update({
-            seller_name: form.seller_name,
-            arrival_date: form.arrival_date || null,
-          })
-          .eq("id", moto.id);
-
-        if (motoError) throw motoError;
+        await updateMotorcycle(moto.id, {
+          seller_name: form.seller_name,
+          arrival_date: form.arrival_date || null,
+        });
       }
 
       notify.success("Cliente atualizado com sucesso!");

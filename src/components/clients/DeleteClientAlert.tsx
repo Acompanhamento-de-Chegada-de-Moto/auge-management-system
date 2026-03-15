@@ -9,8 +9,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { supabase } from "@/lib/supabase/cliente";
 import { notify } from "@/lib/toast";
+import { deleteClient } from "@/services/clientService";
 
 interface Client {
   id: string;
@@ -37,23 +37,18 @@ const DeleteClientAlert = ({
 
     setIsDeleting(true);
 
-    const { data, error } = await supabase
-      .from("clients")
-      .delete()
-      .eq("id", client.id)
-      .select();
-
-    console.log("delete result:", data, error);
-
-    if (error) {
-      notify.error(`Erro ao remover cliente: ${error.message}`);
-    } else {
+    try {
+      await deleteClient(client.id);
       notify.success("Cliente removido com sucesso!");
       onSuccess();
       onOpenChange(false);
+    } catch (error) {
+      notify.error(
+        `Erro ao remover cliente: ${error instanceof Error ? error.message : "Desconhecido"}`,
+      );
+    } finally {
+      setIsDeleting(false);
     }
-
-    setIsDeleting(false);
   };
 
   return (
