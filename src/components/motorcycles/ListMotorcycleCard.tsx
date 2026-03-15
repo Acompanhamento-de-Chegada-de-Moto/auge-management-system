@@ -1,4 +1,3 @@
-import type { Motorcycle } from "@/app/logistics/page";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
@@ -8,6 +7,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import type { Motorcycle } from "@/services/motorcycleService";
 
 interface ListMotorcycleProps {
   motorcycles: Motorcycle[];
